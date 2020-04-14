@@ -9,7 +9,7 @@ class Bot(Thread):
     def __init__(self, candidate, url, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.email = config('email')
-        self.senha = config('senha')
+        self.password = config('password')
 
         self.candidate = candidate
 
@@ -18,18 +18,46 @@ class Bot(Thread):
         self.url = url
         self.browser = None
 
-    def open_browser(self):
+        self.open()
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
+
+    def open(self):
+        print('abrindo browser')
         self.browser = Browser('firefox')
         self.browser.goto(self.url)
         self.browser.wait()
 
-    def auth(self):
-        pass
+    def close(self):
+        print('fechando browser')
+        self.browser.close()
 
-    def get_condidate_div(self):
+    def auth(self):
+        self.condidate_div.click()
+
+        # IFRAME MALDITO!
+        # with self.browser.windows[1]
+        # self.browser.
+
+        # login = self.browser.input(id='login')
+        # login.wait_for_present()
+        # login.send_keys(self.email)
+        #
+        # password = self.browser.input(id='password')
+        # password.wait_for_present()
+        # password.send_keys(self.password)
+        #
+        # entrar = self.browser.button(text='Entrar')
+        # entrar.wait_for_present()
+        # entrar.click()
+
+    @property
+    def condidate_div(self):
         return self.browser.div(text=self.candidate)
 
-    def get_captcha_div(self):
+    @property
+    def captcha_div(self):
         return self.browser.div(
             class_name=[
                 '_3xDixtS9TduMA-tXdgvxyM',
@@ -46,18 +74,25 @@ class Bot(Thread):
             sleep(2)
 
     def votar(self):
-        candidate = self.get_condidate_div()
+        candidate = self.condidate_div
         if candidate.present:
+            print('candidato presente!')
             candidate.click()
             sleep(2)
             while candidate.present:
-                captcha_div = self.get_captcha_div()
+                captcha_div = self.captcha_div
                 captcha_div.wait_for_exists()
+                print('Achei o captcha!')
                 img = captcha_div.img()
+                print('Vou clickar!')
                 img.click()
                 sleep(5)
 
     def run(self):
+        # self.open_browser()
+
+        # self.auth()
+
         self._running = True
         while self._running:
             try:
@@ -77,5 +112,8 @@ if __name__ == '__main__':
         'ou-mari-6b0c783d-65cd-4a4e-940c-ad086cf73fee.ghtml'
     )
 
+    input('Esperando vc logar no sistema!')
+
     bot.start()
+
     bot.join()
